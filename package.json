@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "ganache": "ganache-cli -p 8545 -i 666 -d"
   },
   "repository": {
     "type": "git",
