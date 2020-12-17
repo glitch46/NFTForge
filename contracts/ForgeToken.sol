@@ -2,18 +2,21 @@
 
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/presets/ERC721PresetMinterPauserAutoId.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 /**
  * @title Forge Token Protocol
  * @notice Mint NFTs with burnable conditions
  */
-contract ForgeToken is ERC721PresetMinterPauserAutoId {
+contract ForgeToken is ERC721, AccessControl {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
+    using Counters for Counters.Counter;
 
     uint256 ethFee;
     uint256 zutFee;
@@ -21,6 +24,9 @@ contract ForgeToken is ERC721PresetMinterPauserAutoId {
     IERC20 public zut;
 
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+
+    Counters.Counter private _tokenIdTracker;
 
     struct Properties {
         address tokenToCheck;
@@ -35,10 +41,8 @@ contract ForgeToken is ERC721PresetMinterPauserAutoId {
         IERC20 _zut,
         uint256 _ethFee,
         uint256 _zutFee
-    )
-        public
-        ERC721PresetMinterPauserAutoId("Forge Token", "FT", "ipfs.io/ipfs/")
-    {
+    ) ERC721("Forge Token", "FT") {
+        _setBaseURI("ipfs.io/ipfs/");
         _setupRole(BURNER_ROLE, _msgSender());
         zut = _zut;
         ethFee = _ethFee;
@@ -61,6 +65,11 @@ contract ForgeToken is ERC721PresetMinterPauserAutoId {
         if (_prop.expiration > 0) burnable = block.timestamp > _prop.expiration;
     }
 
+    function mint(address to) internal {
+        _mint(to, _tokenIdTracker.current());
+        _tokenIdTracker.increment();
+    }
+
     /**
      * @dev Buy NFT using ETH
      */
@@ -74,7 +83,7 @@ contract ForgeToken is ERC721PresetMinterPauserAutoId {
         require(expiration > block.timestamp, "Time in the past");
 
         // Add burnable conditions to token
-        tokenProperties[currentTokenId()] = Properties(
+        tokenProperties[_tokenIdTracker.current()] = Properties(
             tokenAddress,
             minBalance,
             expiration,
@@ -105,7 +114,7 @@ contract ForgeToken is ERC721PresetMinterPauserAutoId {
         zut.safeTransferFrom(_msgSender(), address(this), zutFee);
 
         // Token Properties
-        tokenProperties[currentTokenId()] = Properties(
+        tokenProperties[_tokenIdTracker.current()] = Properties(
             tokenAddress,
             minBalance,
             expiration,
