@@ -21,12 +21,16 @@ contract("Forge Token", ([admin, alice, bob]) => {
   before(async function () {
     zut = await ZutToken.new();
     forge = await ForgeToken.new(zut.address, ETH_FEE, ZUT_FEE);
+
+    // Fund users with ZUT tokens
+    await zut.mint(alice, web3.utils.toWei("100"));
+    await zut.mint(bob, web3.utils.toWei("100"));
   });
 
   describe("Buying Tokens", function () {
     it("reverts when buying a token without sending ETH", async function () {
       const currentTime = await time.latest();
-      // Conditions that trigger a require statement can be precisely tested
+
       await expectRevert(
         forge.buyWithETH(
           constants.ZERO_ADDRESS,
@@ -41,8 +45,8 @@ contract("Forge Token", ([admin, alice, bob]) => {
 
     it("should buy a token using ETH", async function () {
       const currentTime = await time.latest();
-      // Conditions that trigger a require statement can be precisely tested
-      forge.buyWithETH(
+
+      await forge.buyWithETH(
         constants.ZERO_ADDRESS,
         0,
         currentTime + 10,
@@ -52,11 +56,13 @@ contract("Forge Token", ([admin, alice, bob]) => {
           value: ETH_FEE,
         }
       );
+
+      expect(await forge.ownerOf(0)).to.be.equal(alice);
     });
 
     it("reverts when buying a token without using ZUT without approving first", async function () {
       const currentTime = await time.latest();
-      // Conditions that trigger a require statement can be precisely tested
+
       await expectRevert(
         forge.buyWithZUT(
           constants.ZERO_ADDRESS,
@@ -65,8 +71,24 @@ contract("Forge Token", ([admin, alice, bob]) => {
           IPFS_HASH1,
           { from: bob }
         ),
-        "ERC20: transfer amount exceeds balance."
+        "ERC20: transfer amount exceeds allowance"
       );
+    });
+
+    it("should buy a token using ZUT", async function () {
+      const currentTime = await time.latest();
+
+      await zut.approve(forge.address, ZUT_FEE, { from: bob });
+
+      await forge.buyWithZUT(
+        constants.ZERO_ADDRESS,
+        0,
+        currentTime + 10,
+        IPFS_HASH1,
+        { from: bob }
+      );
+
+      expect(await forge.ownerOf(1)).to.be.equal(bob);
     });
   });
 });
