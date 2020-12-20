@@ -1,11 +1,39 @@
 import { useState } from "react";
 import { Button, Container, Row, Col, Image, Form } from "react-bootstrap";
+import ipfs from "./utils/ipfs";
 
 import "./App.css";
 import image from "./assets/logo.png";
 import forgeButton from "./assets/forgeButton.png";
 
 function App() {
+  const [ipfsHash, setIpfsHash] = useState(null);
+  const [file, setFile] = useState(null);
+  const [fileName, setFileName] = useState(null);
+
+  console.log(file);
+
+  const loadFile = (_file) => {
+    setFileName(_file.name);
+    var reader = new FileReader();
+    reader.readAsArrayBuffer(_file);
+    reader.onloadend = () => {
+      console.log(Buffer(reader.result));
+      setFile(Buffer(reader.result));
+    };
+  };
+
+  const addToIpfs = async () => {
+    console.log("adding to IPFS...");
+
+    const added = await ipfs.add(file, {
+      progress: (prog) => console.log(`received: ${prog}`),
+    });
+    setIpfsHash(added.cid.toString());
+
+    console.log(ipfsHash);
+  };
+
   return (
     <Container className="mt-5">
       <Row className="justify-content-center align-items-center">
@@ -13,22 +41,32 @@ function App() {
           <Image src={image} className="logo"></Image>
         </Col>
         <Col>
-          <div id="upload-container" className="m-5">
-            <div id="fileUpload">
-              <input id="file" type="file" name="file" className="inputfile" />
-              <label for="file" id="fileLabel">
-                Upload
-              </label>
-            </div>
-            <div id="fileName" style={{ display: "none" }}>
-              <h4></h4>
-              <button id="upload" type="button" className="btn btn-dark">
-                Upload
-              </button>
-              <div id="ipfsResult" className="mt-4"></div>
-            </div>
-          </div>
-          <p>Please upload a PNG, GIF, WEBP, or MP4 Max 30mb</p>
+          {!file && (
+            <>
+              <div id="upload-container">
+                <div id="fileUpload">
+                  <input
+                    id="file"
+                    type="file"
+                    name="file"
+                    className="inputfile"
+                    onChange={(e) => loadFile(e.target.files[0])}
+                  />
+                  <label for="file" id="fileLabel">
+                    Upload
+                  </label>
+                </div>
+              </div>
+              <p>Please upload a PNG, GIF, WEBP, or MP4 Max 30mb</p>
+            </>
+          )}
+          {fileName && (
+            <label htmlFor="file" className="mb">
+              <strong>File Uploaded: </strong>
+              {fileName}
+            </label>
+          )}
+
           <Form className="mt-5">
             <Form.Group as={Row} controlId="formPlaintextPassword">
               <Form.Label column sm="2">
