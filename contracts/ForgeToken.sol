@@ -21,6 +21,8 @@ contract ForgeToken is ERC721, AccessControl {
     uint256 ethFee;
     uint256 zutFee;
 
+    address payable public feeRecipient;
+
     IERC20 public zut;
 
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
@@ -39,12 +41,15 @@ contract ForgeToken is ERC721, AccessControl {
 
     constructor(
         IERC20 _zut,
+        address payable _feeRecipient,
         uint256 _ethFee,
         uint256 _zutFee
     ) ERC721("Forge Token", "FT") {
         _setBaseURI("ipfs.io/ipfs/");
         _setupRole(BURNER_ROLE, _msgSender());
+
         zut = _zut;
+        feeRecipient = _feeRecipient;
         ethFee = _ethFee;
         zutFee = _zutFee;
     }
@@ -93,6 +98,9 @@ contract ForgeToken is ERC721, AccessControl {
         // Mint token to user
         mint(_msgSender());
 
+        // send ETH to fee recipient
+        feeRecipient.transfer(ethFee);
+
         // Refund
         if (msg.value > ethFee) {
             _msgSender().transfer(msg.value.sub(ethFee));
@@ -110,8 +118,8 @@ contract ForgeToken is ERC721, AccessControl {
     ) external {
         require(expiration > block.timestamp, "Time in the past");
 
-        // Collect ZUT tokens
-        zut.safeTransferFrom(_msgSender(), address(this), zutFee);
+        // Collect fees in ZUT token
+        zut.safeTransferFrom(_msgSender(), feeRecipient, zutFee);
 
         // Token Properties
         tokenProperties[_tokenIdTracker.current()] = Properties(
