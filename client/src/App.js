@@ -6,6 +6,8 @@ import ipfs from "./utils/ipfs";
 import Web3 from "web3";
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
+import Torus from "@toruslabs/torus-embed";
+import Authereum from "authereum";
 
 // CSS
 import "./App.css";
@@ -20,8 +22,23 @@ const providerOptions = {
   walletconnect: {
     package: WalletConnectProvider, // required
     options: {
-      // infuraId: INFURA_KEY, // required
+      infuraId: "36bbdc3ed5bd449fad0374a2e07b850a", // required
     },
+  },
+  torus: {
+    package: Torus, // required
+    options: {
+      networkParams: {
+        host: "https://mainnet.infura.io/v3/36bbdc3ed5bd449fad0374a2e07b850a", // optional
+        networkId: 1, // optional
+      },
+      config: {
+        buildEnv: "production", // optional
+      },
+    },
+  },
+  authereum: {
+    package: Authereum,
   },
 };
 const web3Modal = new Web3Modal({
@@ -104,10 +121,22 @@ function App() {
     <>
       <div className="float-right">
         {account ? (
-          <h5 className="mr-5">
-            Connected:{" "}
-            {account.substring(0, 4) + "..." + account.substring(38, 42)}
-          </h5>
+          <>
+            <h5 className="mr-5">
+              Connected:{" "}
+              {account.substring(0, 4) + "..." + account.substring(38, 42)}
+              <span>
+                <Button
+                  className="ml-2"
+                  variant="outline-secondary"
+                  size="sm"
+                  onClick={logout}
+                >
+                  Logout
+                </Button>
+              </span>
+            </h5>
+          </>
         ) : (
           <Button
             variant="secondary"
@@ -119,9 +148,9 @@ function App() {
         )}
       </div>
       <Container className="mt-5">
-        <Row className="justify-content-center align-items-center">
-          <Col className="align-self-center">
-            <Image src={image} className="logo"></Image>
+        <Row className="justify-content-center">
+          <Col>
+            <Image src={image} className="logo" alt="NFT Forge Logo"></Image>
           </Col>
           <Col>
             {/* File Upload */}
@@ -254,6 +283,7 @@ function App() {
             <div className="mt-4">
               <Image
                 src={forgeButton}
+                alt="NFT Forge Button"
                 className="forge-button"
                 onClick={createToken}
               />
