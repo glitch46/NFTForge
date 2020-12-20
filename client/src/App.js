@@ -1,13 +1,39 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button, Container, Row, Col, Image, Form } from "react-bootstrap";
 import ipfs from "./utils/ipfs";
 
+// Web3
+import Web3 from "web3";
+import Web3Modal from "web3modal";
+import WalletConnectProvider from "@walletconnect/web3-provider";
+
+// CSS
 import "./App.css";
+
+// Images
 import image from "./assets/logo.png";
 import forgeButton from "./assets/forgeButton.png";
 import uploadButton from "./assets/uploadButton.png";
 
+// Web3 Modal
+const providerOptions = {
+  walletconnect: {
+    package: WalletConnectProvider, // required
+    options: {
+      // infuraId: INFURA_KEY, // required
+    },
+  },
+};
+const web3Modal = new Web3Modal({
+  network: "mainnet", // optional
+  cacheProvider: true, // optional
+  providerOptions, // required
+  theme: "dark",
+});
+
 function App() {
+  const [account, setAccount] = useState(null);
+
   // File
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState(null);
@@ -20,6 +46,34 @@ function App() {
   // Expiration Condition
   const [option2Checked, setOption2Checked] = useState(false);
   const [expirationTime, setExpirationTime] = useState(0);
+
+  // Functions
+
+  const logout = () => {
+    setAccount(null);
+    web3Modal.clearCachedProvider();
+  };
+
+  const connectWeb3 = useCallback(async () => {
+    try {
+      const provider = await web3Modal.connect();
+
+      provider.on("accountsChanged", (acc) => {
+        setAccount(acc[0]);
+      });
+
+      window.web3 = new Web3(provider);
+
+      const acc = await window.web3.eth.getAccounts();
+      setAccount(acc[0]);
+
+      console.log("Connected Account: ", acc[0]);
+    } catch (error) {
+      console.log(error.message);
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadFile = (_file) => {
     setFileName(_file.name);
@@ -47,146 +101,167 @@ function App() {
   };
 
   return (
-    <Container className="mt-5">
-      <Row className="justify-content-center align-items-center">
-        <Col className="align-self-center">
-          <Image src={image} className="logo"></Image>
-        </Col>
-        <Col>
-          {/* File Upload */}
-          <div>
-            {!file && (
-              <>
-                <div id="upload-container">
-                  <div id="fileUpload">
-                    <input
-                      id="file"
-                      type="file"
-                      name="file"
-                      className="inputfile"
-                      onChange={(e) => loadFile(e.target.files[0])}
-                    />
-                    <label htmlFor="file" id="fileLabel">
-                      <img src={uploadButton} className="upload-button" />
-                    </label>
+    <>
+      <div className="float-right">
+        {account ? (
+          <h5 className="mr-5">
+            Connected:{" "}
+            {account.substring(0, 4) + "..." + account.substring(38, 42)}
+          </h5>
+        ) : (
+          <Button
+            variant="secondary"
+            onClick={connectWeb3}
+            className="connect-button mr-5"
+          >
+            Connect to Web3
+          </Button>
+        )}
+      </div>
+      <Container className="mt-5">
+        <Row className="justify-content-center align-items-center">
+          <Col className="align-self-center">
+            <Image src={image} className="logo"></Image>
+          </Col>
+          <Col>
+            {/* File Upload */}
+            <div>
+              {!file && (
+                <>
+                  <div id="upload-container">
+                    <div id="fileUpload">
+                      <input
+                        id="file"
+                        type="file"
+                        name="file"
+                        className="inputfile"
+                        onChange={(e) => loadFile(e.target.files[0])}
+                      />
+                      <label htmlFor="file" id="fileLabel">
+                        <img src={uploadButton} className="upload-button" />
+                      </label>
+                    </div>
                   </div>
-                </div>
-                <p className="mt-4">
-                  Please upload a PNG, GIF, WEBP, or MP4 Max 30mb
-                </p>
-              </>
-            )}
-            {fileName && (
-              <label htmlFor="file" className="mb">
-                <strong>File Uploaded: </strong>
-                {fileName}
-              </label>
-            )}
+                  <p className="mt-4">
+                    Please upload a PNG, GIF, WEBP, or MP4 Max 30mb
+                  </p>
+                </>
+              )}
+              {fileName && (
+                <label htmlFor="file" className="mb">
+                  <strong>File Uploaded: </strong>
+                  {fileName}
+                </label>
+              )}
 
-            <Form className="mt-5">
-              <Form.Group as={Row} controlId="formPlaintextPassword">
-                <Form.Label column sm="3">
-                  NFT Name
-                </Form.Label>
-                <Col sm="9" className="align-self-center">
-                  <Form.Control type="text" placeholder="Eg. Blue ZUT Statue" />
-                </Col>
-              </Form.Group>
-
-              <Form.Group as={Row} controlId="formPlaintextPassword">
-                <Form.Label column sm="3">
-                  Symbol
-                </Form.Label>
-                <Col sm="9" className="align-self-center">
-                  <Form.Control type="text" placeholder="ZUT, ETH, ZRX ..." />
-                </Col>
-              </Form.Group>
-            </Form>
-            <p className="mt-5">
-              Please add specialized properties to the NFT (select one or
-              multiple):{" "}
-            </p>
-          </div>
-
-          {/* Option 1: Min Balance in Owner Wallet */}
-          <div className="ml-3">
-            <Form.Check type={"checkbox"}>
-              <Form.Check.Input
-                type={"checkbox"}
-                onChange={(e) => setOption1Checked(e.target.checked)}
-              />
-              <Form.Check.Label>{`Holder must hold specific quantity of tokens`}</Form.Check.Label>
-            </Form.Check>
-
-            {option1Checked && (
-              <Form className="mt-2 ml-2">
+              <Form className="mt-5">
                 <Form.Group as={Row} controlId="formPlaintextPassword">
                   <Form.Label column sm="3">
-                    Token Address
+                    NFT Name
                   </Form.Label>
                   <Col sm="9" className="align-self-center">
                     <Form.Control
                       type="text"
-                      placeholder="Eg. 0x514910771af9ca656af840dff83e8264ecf986ca"
-                      onChange={(e) => setTokenAddress(e.target.value)}
+                      placeholder="Eg. Blue ZUT Statue"
                     />
                   </Col>
                 </Form.Group>
 
                 <Form.Group as={Row} controlId="formPlaintextPassword">
                   <Form.Label column sm="3">
-                    Minimum Balance
+                    Symbol
                   </Form.Label>
                   <Col sm="9" className="align-self-center">
-                    <Form.Control
-                      type="text"
-                      placeholder="Eg. 1000"
-                      onChange={(e) => setMinBalance(e.target.value)}
-                    />
+                    <Form.Control type="text" placeholder="ZUT, ETH, ZRX ..." />
                   </Col>
                 </Form.Group>
               </Form>
-            )}
-          </div>
+              <p className="mt-5">
+                Please add specialized properties to the NFT (select one or
+                multiple):{" "}
+              </p>
+            </div>
 
-          {/* Option 2: Expiration Time */}
-          <div className="mt-4 ml-3">
-            <Form.Check type={"checkbox"}>
-              <Form.Check.Input
-                type={"checkbox"}
-                onChange={(e) => setOption2Checked(e.target.checked)}
+            {/* Option 1: Min Balance in Owner Wallet */}
+            <div className="ml-3">
+              <Form.Check type={"checkbox"}>
+                <Form.Check.Input
+                  type={"checkbox"}
+                  onChange={(e) => setOption1Checked(e.target.checked)}
+                />
+                <Form.Check.Label>{`Holder must hold specific quantity of tokens`}</Form.Check.Label>
+              </Form.Check>
+
+              {option1Checked && (
+                <Form className="mt-2 ml-2">
+                  <Form.Group as={Row} controlId="formPlaintextPassword">
+                    <Form.Label column sm="3">
+                      Token Address
+                    </Form.Label>
+                    <Col sm="9" className="align-self-center">
+                      <Form.Control
+                        type="text"
+                        placeholder="Eg. 0x514910771af9ca656af840dff83e8264ecf986ca"
+                        onChange={(e) => setTokenAddress(e.target.value)}
+                      />
+                    </Col>
+                  </Form.Group>
+
+                  <Form.Group as={Row} controlId="formPlaintextPassword">
+                    <Form.Label column sm="3">
+                      Minimum Balance
+                    </Form.Label>
+                    <Col sm="9" className="align-self-center">
+                      <Form.Control
+                        type="text"
+                        placeholder="Eg. 1000"
+                        onChange={(e) => setMinBalance(e.target.value)}
+                      />
+                    </Col>
+                  </Form.Group>
+                </Form>
+              )}
+            </div>
+
+            {/* Option 2: Expiration Time */}
+            <div className="mt-4 ml-3">
+              <Form.Check type={"checkbox"}>
+                <Form.Check.Input
+                  type={"checkbox"}
+                  onChange={(e) => setOption2Checked(e.target.checked)}
+                />
+                <Form.Check.Label>{`NFT Auto Destructs on a timer`}</Form.Check.Label>
+              </Form.Check>
+              {option2Checked && (
+                <Form className="mt-2 ml-2">
+                  <Form.Group as={Row} controlId="formPlaintextPassword">
+                    <Form.Label column sm="3">
+                      Expiration Time
+                    </Form.Label>
+                    <Col sm="9" className="align-self-center">
+                      <Form.Control
+                        type="number"
+                        placeholder="Eg. 1608497905"
+                        onChange={(e) => setExpirationTime(e.target.value)}
+                      />
+                    </Col>
+                  </Form.Group>
+                </Form>
+              )}
+            </div>
+
+            {/* Token Creation */}
+            <div className="mt-4">
+              <Image
+                src={forgeButton}
+                className="forge-button"
+                onClick={createToken}
               />
-              <Form.Check.Label>{`NFT Auto Destructs on a timer`}</Form.Check.Label>
-            </Form.Check>
-            {option2Checked && (
-              <Form className="mt-2 ml-2">
-                <Form.Group as={Row} controlId="formPlaintextPassword">
-                  <Form.Label column sm="3">
-                    Expiration Time
-                  </Form.Label>
-                  <Col sm="9" className="align-self-center">
-                    <Form.Control
-                      type="number"
-                      placeholder="Eg. 1608497905"
-                      onChange={(e) => setExpirationTime(e.target.value)}
-                    />
-                  </Col>
-                </Form.Group>
-              </Form>
-            )}
-          </div>
-
-          {/* Token Creation */}
-          <div className="mt-4">
-            <Image
-              src={forgeButton}
-              className="forge-button"
-              onClick={createToken}
-            />
-          </div>
-        </Col>
-      </Row>
-    </Container>
+            </div>
+          </Col>
+        </Row>
+      </Container>
+    </>
   );
 }
 

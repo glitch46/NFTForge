@@ -43,3 +43,8 @@
   width: 300px;
   cursor: pointer;
 }
+
+.connect-button {
+  border-radius: 20px;
+  color: black;
+}
