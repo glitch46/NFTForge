@@ -2,33 +2,30 @@
 
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/presets/ERC1155PresetMinterPauser.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 /**
  * @title Forge Token Protocol
  * @notice Mint NFTs with burnable conditions
  */
-contract ForgeToken is ERC721, AccessControl {
+contract ForgeToken is ERC1155PresetMinterPauser {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using Counters for Counters.Counter;
 
+    Counters.Counter private _tokenIdTracker;
+
+    // ETH and ZUT fees per token minted
     uint256 ethFee;
     uint256 zutFee;
 
     address payable public feeRecipient;
 
     IERC20 public zut;
-
-    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-
-    Counters.Counter private _tokenIdTracker;
 
     struct Properties {
         address tokenToCheck;
@@ -44,10 +41,7 @@ contract ForgeToken is ERC721, AccessControl {
         address payable _feeRecipient,
         uint256 _ethFee,
         uint256 _zutFee
-    ) ERC721("Forge Token", "FT") {
-        _setBaseURI("ipfs.io/ipfs/");
-        _setupRole(BURNER_ROLE, _msgSender());
-
+    ) ERC1155PresetMinterPauser("ipfs.io/ipfs/") {
         zut = _zut;
         feeRecipient = _feeRecipient;
         ethFee = _ethFee;
@@ -55,30 +49,49 @@ contract ForgeToken is ERC721, AccessControl {
     }
 
     /**
+     *** GETTERS ****
+     */
+
+    /**
      * @dev Determine if a token can be burned, 
         checking token balances and expiration time
      */
-    function canBurn(uint256 tokenId) public view returns (bool burnable) {
+    function canBurn(uint256 tokenId, address user)
+        public
+        view
+        returns (bool burnable)
+    {
         Properties memory _prop = tokenProperties[tokenId];
 
         if (_prop.tokenToCheck != address(0)) {
             burnable =
-                IERC20(_prop.tokenToCheck).balanceOf(ownerOf(tokenId)) <
-                _prop.minBalance;
+                IERC20(_prop.tokenToCheck).balanceOf(user) < _prop.minBalance;
         }
 
         if (_prop.expiration > 0) burnable = block.timestamp > _prop.expiration;
     }
 
-    function mint(address to) internal {
-        _mint(to, _tokenIdTracker.current());
-        _tokenIdTracker.increment();
+    function currentTokenId() public view returns (uint256) {
+        return _tokenIdTracker.current();
+    }
+
+    /**
+     *** SETTERS ****
+     */
+
+    function addBurnRole(address allowedAddress) external {
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, _msgSender()),
+            "ERC1155PresetMinterPauser: must have admin role to mint"
+        );
+        _setupRole(BURNER_ROLE, allowedAddress);
     }
 
     /**
      * @dev Buy NFT using ETH
      */
     function buyWithETH(
+        uint256 amountTokens,
         address tokenAddress,
         uint256 minBalance,
         uint256 expiration,
@@ -96,7 +109,9 @@ contract ForgeToken is ERC721, AccessControl {
         );
 
         // Mint token to user
-        mint(_msgSender());
+        mint(_msgSender(), _tokenIdTracker.current(), amountTokens, "");
+
+        _tokenIdTracker.increment();
 
         // send ETH to fee recipient
         feeRecipient.transfer(ethFee);
@@ -111,6 +126,7 @@ contract ForgeToken is ERC721, AccessControl {
      * @dev Buy NFT using ZUT
      */
     function buyWithZUT(
+        uint256 amountTokens,
         address tokenAddress,
         uint256 minBalance,
         uint256 expiration,
@@ -130,16 +146,18 @@ contract ForgeToken is ERC721, AccessControl {
         );
 
         // Mint token to user
-        mint(_msgSender());
+        mint(_msgSender(), _tokenIdTracker.current(), amountTokens, "");
+
+        _tokenIdTracker.increment();
     }
 
     /**
      * @dev Burn a NFT token
      */
-    function burnToken(uint256 tokenId) external {
-        require(canBurn(tokenId), "Can't burn token yet");
+    function burnToken(uint256 tokenId, address user) external {
+        require(canBurn(tokenId, user), "Can't burn token yet");
         require(hasRole(BURNER_ROLE, _msgSender()), "Must have burner role");
 
-        _burn(tokenId);
+        _burn(user, tokenId, 1);
     }
 }
