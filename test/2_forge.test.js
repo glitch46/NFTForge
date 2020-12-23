@@ -1,18 +1,17 @@
-const { deployProxy, upgradeProxy } = require("@openzeppelin/truffle-upgrades");
+const { deployProxy } = require("@openzeppelin/truffle-upgrades");
 const {
-  BN, // Big Number support
-  constants, // Common constants, like the zero address and largest integers
-  expectEvent, // Assertions for emitted events
+  // BN, // Big Number support
+  // constants, // Common constants, like the zero address and largest integers
+  // expectEvent, // Assertions for emitted events
   expectRevert, // Assertions for transactions that should fail
   time,
 } = require("@openzeppelin/test-helpers");
-const { assertion } = require("@openzeppelin/test-helpers/src/expectRevert");
 
 const ForgeToken = artifacts.require("ForgeToken");
 const ZUT = artifacts.require("ZUT");
 
 const ETH_FEE = web3.utils.toWei("0.02");
-const ZUT_FEE = web3.utils.toWei("0.03");
+const ZUT_FEE = web3.utils.toWei("0.01");
 
 const IPFS_HASH1 = "Qmbd1guB9bi3hKEYGGvQJYNvDUpCeuW3y4J7ydJtHfYMF6";
 const IPFS_HASH2 = "QmTo5Vo3q2xF7Q4vCqkEN3iEuowVyo8rJtBXXQJw5rnXMB";
@@ -34,8 +33,8 @@ contract("Forge Token", ([admin, alice, bob, feeRecipient]) => {
     );
 
     // Fund users with ZUT tokens
-    await zut.mint(alice, web3.utils.toWei("100"));
-    await zut.mint(bob, web3.utils.toWei("100"));
+    await zut.mint(alice, web3.utils.toWei("1000"));
+    await zut.mint(bob, web3.utils.toWei("1000"));
   });
 
   describe("Buying Tokens", function () {
@@ -55,7 +54,7 @@ contract("Forge Token", ([admin, alice, bob, feeRecipient]) => {
 
       await forge.buyWithETH(50, zut.address, 2, currentTime + 10, IPFS_HASH1, {
         from: alice,
-        value: ETH_FEE,
+        value: 50 * ETH_FEE,
       });
 
       const aliceBalance = await forge.balanceOf(alice, 0);
@@ -76,7 +75,7 @@ contract("Forge Token", ([admin, alice, bob, feeRecipient]) => {
     it("should buy a token using ZUT", async function () {
       const currentTime = await time.latest();
 
-      await zut.approve(forge.address, ZUT_FEE, { from: bob });
+      await zut.approve(forge.address, String(50 * ZUT_FEE), { from: bob });
 
       await forge.buyWithZUT(50, zut.address, 2, currentTime + 10, IPFS_HASH1, {
         from: bob,

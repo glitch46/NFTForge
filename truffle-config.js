@@ -21,7 +21,7 @@ module.exports = {
       network_id: 666,
       gasPrice: 35e9,
     },
-    ropsten: {
+    rinkeby: {
       provider: () => providerFactory("rinkeby"),
       network_id: 4,
       gas: 6e6,

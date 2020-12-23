@@ -1,4 +1,7 @@
-const { deployProxy, upgradeProxy } = require("@openzeppelin/truffle-upgrades");
+const {
+  deployProxy,
+  silenceWarnings,
+} = require("@openzeppelin/truffle-upgrades");
 
 const ForgeToken = artifacts.require("ForgeToken");
 const ZUT = artifacts.require("ZUT");
@@ -12,6 +15,8 @@ const APP_URL = "https://nft-forge.netlify.app/";
 
 module.exports = async function (deployer, network, accounts) {
   if (network === "test") return;
+
+  silenceWarnings();
 
   // DEPLOY PROXY ZUT ERC20
   const zutToken = await deployProxy(ZUT, ["Zero Utility Token", "ZUT"], {

@@ -9,6 +9,7 @@
   "scripts": {
     "ganache": "ganache-cli -p 8545 -i 666 -d",
     "deploy": "truffle migrate --reset",
+    "testnet": "truffle migrate --reset --network rinkeby",
     "test":"truffle test --network test"
   },
   "repository": {

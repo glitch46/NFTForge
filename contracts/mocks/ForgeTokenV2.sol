@@ -7,14 +7,14 @@ import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
-import "./utils/Strings.sol";
+import "../utils/Strings.sol";
 
 /**
  * @title Forge Token Protocol
  * @notice Mint NFTs with burnable conditions
  */
 
-contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
+contract ForgeTokenV2 is ERC1155PresetMinterPauserUpgradeable {
     using CountersUpgradeable for CountersUpgradeable.Counter;
     using SafeERC20Upgradeable for IERC20Upgradeable;
     using SafeMathUpgradeable for uint256;
@@ -40,6 +40,11 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
     mapping(uint256 => uint256) expirations;
 
     // === V1 State Vars END ===
+
+    // === V2 State Vars START ===
+
+    // Add property 3
+    mapping(uint256 => uint256) minHoldings;
 
     function initialize(
         IERC20Upgradeable _zut,
@@ -94,7 +99,6 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
     function canBurn(uint256 tokenId, address user)
         public
         view
-        virtual
         returns (bool burnable)
     {
         if (balanceOf(user, tokenId) == 0) return false;
@@ -110,6 +114,14 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         // Condition 2: Expiration time
         if (
             expirations[tokenId] > 0 && block.timestamp > expirations[tokenId]
+        ) {
+            return true;
+        }
+
+        // Condition 3: Minimum Holdings
+        if (
+            minHoldings[tokenId] > 0 &&
+            balanceOf(user, tokenId) < minHoldings[tokenId]
         ) {
             return true;
         }
@@ -132,7 +144,7 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         uint256 minBalance,
         uint256 expiration,
         string memory ipfsHash
-    ) external payable virtual {
+    ) external payable {
         uint256 amountFee = ethFee.mul(amountTokens);
 
         require(msg.value >= amountFee, "Not enough ETH sent");
@@ -170,7 +182,7 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         uint256 minBalance,
         uint256 expiration,
         string memory ipfsHash
-    ) external virtual {
+    ) external {
         require(expiration > block.timestamp, "Time in the past");
         require(tokenAddress != address(0), "ZERO ADDRESS");
 
