@@ -5,6 +5,11 @@ const {
 } = require("@openzeppelin/truffle-upgrades");
 
 const {
+  getImplementationAddress,
+  getAdminAddress,
+} = require("@openzeppelin/upgrades-core");
+
+const {
   BN, // Big Number support
   constants, // Common constants, like the zero address and largest integers
   expectEvent, // Assertions for emitted events
@@ -56,8 +61,8 @@ contract("Upgradeability", ([admin, alice, bob, feeRecipient]) => {
     });
   });
 
-  describe("Upgrades", function () {
-    it("should upgrade contract to V2", async function () {
+  describe("Upgrade", function () {
+    it("should upgrade contract to V2 by admin", async function () {
       forge = await upgradeProxy(forge.address, ForgeTokenV2, {
         admin,
         unsafeAllowCustomTypes: true,

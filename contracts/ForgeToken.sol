@@ -229,8 +229,4 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
     function setFeeRecipient(address payable _feeRecipient) external onlyAdmin {
         feeRecipient = _feeRecipient;
     }
-
-    function addBurnRole(address allowedAddress) external onlyAdmin {
-        _setupRole(keccak256("BURNER_ROLE"), allowedAddress);
-    }
 }
