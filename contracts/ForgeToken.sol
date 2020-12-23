@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "./utils/Strings.sol";
 
 /**
  * @title Forge Token Protocol
@@ -27,11 +28,14 @@ contract ForgeToken is ERC1155PresetMinterPauser {
 
     IERC20 public zut;
 
+    string private _contractURI;
+    string private _baseURI;
+
     struct Properties {
         address tokenToCheck;
         uint256 minBalance;
         uint256 expiration;
-        bytes32 ipfsHash; // file
+        string ipfsHash; // file
     }
 
     mapping(uint256 => Properties) tokenProperties;
@@ -41,16 +45,37 @@ contract ForgeToken is ERC1155PresetMinterPauser {
         address payable _feeRecipient,
         uint256 _ethFee,
         uint256 _zutFee
-    ) ERC1155PresetMinterPauser("ipfs.io/ipfs/") {
+    ) ERC1155PresetMinterPauser("") {
+        _baseURI = "ipfs://";
         zut = _zut;
         feeRecipient = _feeRecipient;
         ethFee = _ethFee;
         zutFee = _zutFee;
     }
 
+    modifier onlyAdmin() {
+        require(
+            hasRole(DEFAULT_ADMIN_ROLE, _msgSender()),
+            "ERC1155PresetMinterPauser: must have admin role to mint"
+        );
+        _;
+    }
+
     /**
      *** GETTERS ****
      */
+
+    /**
+     * @dev concatenate base uri and ipfs hash of token
+     */
+    function uri(uint256 tokenId)
+        external
+        view
+        override
+        returns (string memory)
+    {
+        return Strings.strConcat(_baseURI, tokenProperties[tokenId].ipfsHash);
+    }
 
     /**
      * @dev Determine if a token can be burned, 
@@ -75,27 +100,31 @@ contract ForgeToken is ERC1155PresetMinterPauser {
         return _tokenIdTracker.current();
     }
 
+    function contractURI() public view returns (string memory) {
+        return _contractURI;
+    }
+
     /**
      *** SETTERS ****
      */
 
-    function addBurnRole(address allowedAddress) external {
-        require(
-            hasRole(DEFAULT_ADMIN_ROLE, _msgSender()),
-            "ERC1155PresetMinterPauser: must have admin role to mint"
-        );
+    function setContractURI(string memory ipfsUrl) external onlyAdmin {
+        _contractURI = ipfsUrl;
+    }
+
+    function addBurnRole(address allowedAddress) external onlyAdmin {
         _setupRole(BURNER_ROLE, allowedAddress);
     }
 
     /**
-     * @dev Buy NFT using ETH
+     * @notice Create NFT Collecions paying with ETH
      */
     function buyWithETH(
         uint256 amountTokens,
         address tokenAddress,
         uint256 minBalance,
         uint256 expiration,
-        bytes32 ipfsHash
+        string memory ipfsHash
     ) external payable {
         require(msg.value >= ethFee, "Not enough ETH sent");
         require(expiration > block.timestamp, "Time in the past");
@@ -123,14 +152,14 @@ contract ForgeToken is ERC1155PresetMinterPauser {
     }
 
     /**
-     * @dev Buy NFT using ZUT
+     * @notice Create NFT Collecions paying with ZUT
      */
     function buyWithZUT(
         uint256 amountTokens,
         address tokenAddress,
         uint256 minBalance,
         uint256 expiration,
-        bytes32 ipfsHash
+        string memory ipfsHash
     ) external {
         require(expiration > block.timestamp, "Time in the past");
 
@@ -152,7 +181,7 @@ contract ForgeToken is ERC1155PresetMinterPauser {
     }
 
     /**
-     * @dev Burn a NFT token
+     * @notice Burn a NFT token if certain conditions are met
      */
     function burnToken(uint256 tokenId, address user) external {
         require(canBurn(tokenId, user), "Can't burn token yet");
