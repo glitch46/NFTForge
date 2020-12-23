@@ -1,3 +1,4 @@
+const { deployProxy, upgradeProxy } = require("@openzeppelin/truffle-upgrades");
 const {
   BN, // Big Number support
   constants, // Common constants, like the zero address and largest integers
@@ -5,22 +6,32 @@ const {
   expectRevert, // Assertions for transactions that should fail
   time,
 } = require("@openzeppelin/test-helpers");
+const { assertion } = require("@openzeppelin/test-helpers/src/expectRevert");
 
 const ForgeToken = artifacts.require("ForgeToken");
-const ZutToken = artifacts.require("ZUTMock");
+const ZUT = artifacts.require("ZUT");
 
-const ETH_FEE = web3.utils.toWei("0.1");
+const ETH_FEE = web3.utils.toWei("0.02");
 const ZUT_FEE = web3.utils.toWei("0.03");
 
-const IPFS_HASH1 = web3.utils.sha3("hash1");
-const IPFS_HASH2 = web3.utils.sha3("hash2");
+const IPFS_HASH1 = "Qmbd1guB9bi3hKEYGGvQJYNvDUpCeuW3y4J7ydJtHfYMF6";
+const IPFS_HASH2 = "QmTo5Vo3q2xF7Q4vCqkEN3iEuowVyo8rJtBXXQJw5rnXMB";
 
-contract("Forge Token", ([admin, alice, bob]) => {
+contract("Forge Token", ([admin, alice, bob, feeRecipient]) => {
   let zut, forge;
 
   before(async function () {
-    zut = await ZutToken.new();
-    forge = await ForgeToken.new(zut.address, ETH_FEE, ZUT_FEE);
+    zut = await deployProxy(ZUT, ["Zero Utility Token", "ZUT"], {
+      admin,
+      unsafeAllowCustomTypes: true,
+    });
+
+    // DEPLOY PROXY FORGE ERC1155
+    forge = await deployProxy(
+      ForgeToken,
+      [zut.address, feeRecipient, ETH_FEE, ZUT_FEE],
+      { admin, unsafeAllowCustomTypes: true }
+    );
 
     // Fund users with ZUT tokens
     await zut.mint(alice, web3.utils.toWei("100"));
@@ -32,45 +43,32 @@ contract("Forge Token", ([admin, alice, bob]) => {
       const currentTime = await time.latest();
 
       await expectRevert(
-        forge.buyWithETH(
-          constants.ZERO_ADDRESS,
-          0,
-          currentTime + 10,
-          IPFS_HASH1,
-          { from: alice }
-        ),
+        forge.buyWithETH(50, zut.address, 2, currentTime + 10, IPFS_HASH1, {
+          from: alice,
+        }),
         "Not enough ETH sent"
       );
     });
 
-    it("should buy a token using ETH", async function () {
+    it("should buy 50 tokens using ETH", async function () {
       const currentTime = await time.latest();
 
-      await forge.buyWithETH(
-        constants.ZERO_ADDRESS,
-        0,
-        currentTime + 10,
-        IPFS_HASH1,
-        {
-          from: alice,
-          value: ETH_FEE,
-        }
-      );
+      await forge.buyWithETH(50, zut.address, 2, currentTime + 10, IPFS_HASH1, {
+        from: alice,
+        value: ETH_FEE,
+      });
 
-      expect(await forge.ownerOf(0)).to.be.equal(alice);
+      const aliceBalance = await forge.balanceOf(alice, 0);
+      assert.equal(aliceBalance, 50);
     });
 
     it("reverts when buying a token without using ZUT without approving first", async function () {
       const currentTime = await time.latest();
 
       await expectRevert(
-        forge.buyWithZUT(
-          constants.ZERO_ADDRESS,
-          0,
-          currentTime + 10,
-          IPFS_HASH1,
-          { from: bob }
-        ),
+        forge.buyWithZUT(50, zut.address, 2, currentTime + 10, IPFS_HASH1, {
+          from: bob,
+        }),
         "ERC20: transfer amount exceeds allowance"
       );
     });
@@ -80,15 +78,12 @@ contract("Forge Token", ([admin, alice, bob]) => {
 
       await zut.approve(forge.address, ZUT_FEE, { from: bob });
 
-      await forge.buyWithZUT(
-        constants.ZERO_ADDRESS,
-        0,
-        currentTime + 10,
-        IPFS_HASH1,
-        { from: bob }
-      );
+      await forge.buyWithZUT(50, zut.address, 2, currentTime + 10, IPFS_HASH1, {
+        from: bob,
+      });
 
-      expect(await forge.ownerOf(1)).to.be.equal(bob);
+      const bobBalance = await forge.balanceOf(bob, 1);
+      assert.equal(bobBalance, 50);
     });
   });
 });

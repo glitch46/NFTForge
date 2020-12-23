@@ -15,6 +15,12 @@ module.exports = {
       network_id: 666,
       gasPrice: 35e9,
     },
+    test: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: 666,
+      gasPrice: 35e9,
+    },
     ropsten: {
       provider: () => providerFactory("rinkeby"),
       network_id: 4,
@@ -26,7 +32,7 @@ module.exports = {
       network_id: 1,
       gasPrice: 20e9, // 20 Gwei, Change this value according to price average of the deployment time
       gas: 2e6,
-    },    
+    },
   },
   compilers: {
     solc: {

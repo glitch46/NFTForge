@@ -46,7 +46,7 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         uint256 _zutFee
     ) public initializer {
         ERC1155PresetMinterPauserUpgradeable.initialize("");
-        _baseURI = "ipfs://";
+        _baseURI = "https://ipfs.io/ipfs/";
         zut = _zut;
         feeRecipient = _feeRecipient;
         ethFee = _ethFee;
@@ -113,6 +113,10 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         _contractURI = ipfsUrl;
     }
 
+    function setBaseURI(string memory baseURI) external onlyAdmin {
+        _baseURI = baseURI;
+    }
+
     function addBurnRole(address allowedAddress) external onlyAdmin {
         _setupRole(keccak256("BURNER_ROLE"), allowedAddress);
     }
@@ -129,6 +133,7 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
     ) external payable {
         require(msg.value >= ethFee, "Not enough ETH sent");
         require(expiration > block.timestamp, "Time in the past");
+        require(tokenAddress != address(0), "ZERO ADDRESS");
 
         // Add burnable conditions to token
         tokenProperties[_tokenIdTracker.current()] = Properties(
@@ -139,7 +144,7 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         );
 
         // Mint token to user
-        mint(_msgSender(), _tokenIdTracker.current(), amountTokens, "");
+        _mint(_msgSender(), _tokenIdTracker.current(), amountTokens, "");
 
         _tokenIdTracker.increment();
 
@@ -163,6 +168,7 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         string memory ipfsHash
     ) external {
         require(expiration > block.timestamp, "Time in the past");
+        require(tokenAddress != address(0), "ZERO ADDRESS");
 
         // Collect fees in ZUT token
         zut.safeTransferFrom(_msgSender(), feeRecipient, zutFee);
@@ -176,7 +182,7 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         );
 
         // Mint token to user
-        mint(_msgSender(), _tokenIdTracker.current(), amountTokens, "");
+        _mint(_msgSender(), _tokenIdTracker.current(), amountTokens, "");
 
         _tokenIdTracker.increment();
     }
