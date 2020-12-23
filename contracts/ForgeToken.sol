@@ -2,31 +2,30 @@
 
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/presets/ERC1155PresetMinterPauser.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts-upgradeable/presets/ERC1155PresetMinterPauserUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "./utils/Strings.sol";
 
 /**
  * @title Forge Token Protocol
  * @notice Mint NFTs with burnable conditions
  */
-contract ForgeToken is ERC1155PresetMinterPauser {
-    using SafeMath for uint256;
-    using SafeERC20 for IERC20;
-    using Counters for Counters.Counter;
+contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
+    using CountersUpgradeable for CountersUpgradeable.Counter;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+    using SafeMathUpgradeable for uint256;
 
-    Counters.Counter private _tokenIdTracker;
+    CountersUpgradeable.Counter private _tokenIdTracker;
 
-    // ETH and ZUT fees per token minted
+    IERC20Upgradeable zut;
+
     uint256 ethFee;
     uint256 zutFee;
 
-    address payable public feeRecipient;
-
-    IERC20 public zut;
+    address payable feeRecipient;
 
     string private _contractURI;
     string private _baseURI;
@@ -40,12 +39,13 @@ contract ForgeToken is ERC1155PresetMinterPauser {
 
     mapping(uint256 => Properties) tokenProperties;
 
-    constructor(
-        IERC20 _zut,
+    function initialize(
+        IERC20Upgradeable _zut,
         address payable _feeRecipient,
         uint256 _ethFee,
         uint256 _zutFee
-    ) ERC1155PresetMinterPauser("") {
+    ) public initializer {
+        ERC1155PresetMinterPauserUpgradeable.initialize("");
         _baseURI = "ipfs://";
         zut = _zut;
         feeRecipient = _feeRecipient;
@@ -77,6 +77,14 @@ contract ForgeToken is ERC1155PresetMinterPauser {
         return Strings.strConcat(_baseURI, tokenProperties[tokenId].ipfsHash);
     }
 
+    function currentTokenId() public view returns (uint256) {
+        return _tokenIdTracker.current();
+    }
+
+    function contractURI() public view returns (string memory) {
+        return _contractURI;
+    }
+
     /**
      * @dev Determine if a token can be burned, 
         checking token balances and expiration time
@@ -90,18 +98,11 @@ contract ForgeToken is ERC1155PresetMinterPauser {
 
         if (_prop.tokenToCheck != address(0)) {
             burnable =
-                IERC20(_prop.tokenToCheck).balanceOf(user) < _prop.minBalance;
+                IERC20Upgradeable(_prop.tokenToCheck).balanceOf(user) <
+                _prop.minBalance;
         }
 
         if (_prop.expiration > 0) burnable = block.timestamp > _prop.expiration;
-    }
-
-    function currentTokenId() public view returns (uint256) {
-        return _tokenIdTracker.current();
-    }
-
-    function contractURI() public view returns (string memory) {
-        return _contractURI;
     }
 
     /**
@@ -113,7 +114,7 @@ contract ForgeToken is ERC1155PresetMinterPauser {
     }
 
     function addBurnRole(address allowedAddress) external onlyAdmin {
-        _setupRole(BURNER_ROLE, allowedAddress);
+        _setupRole(keccak256("BURNER_ROLE"), allowedAddress);
     }
 
     /**
@@ -185,7 +186,10 @@ contract ForgeToken is ERC1155PresetMinterPauser {
      */
     function burnToken(uint256 tokenId, address user) external {
         require(canBurn(tokenId, user), "Can't burn token yet");
-        require(hasRole(BURNER_ROLE, _msgSender()), "Must have burner role");
+        require(
+            hasRole(keccak256("BURNER_ROLE"), _msgSender()),
+            "Must have burner role"
+        );
 
         _burn(user, tokenId, 1);
     }
