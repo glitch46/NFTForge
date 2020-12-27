@@ -67,6 +67,9 @@ function App() {
   const [option2Checked, setOption2Checked] = useState(false);
   const [expirationTime, setExpirationTime] = useState(0);
 
+  // Expiration Condition
+  const [isPaymentETH, setIsPaymentETH] = useState(true);
+
   // Web3
   const [forgeContract, setForgeContract] = useState(null);
   const [zutContract, setZutContract] = useState(null);
@@ -127,7 +130,9 @@ function App() {
   };
 
   const createToken = async () => {
+    console.log("Paying with ETH?", isPaymentETH);
     console.log("Creating NFT...");
+
     try {
       // const ipfsHash = await addToIpfs();
       // console.log(ipfsHash);
@@ -309,15 +314,40 @@ function App() {
               )}
             </div>
 
-            {/* Token Creation */}
-            <div className="mt-4">
-              <Image
-                src={forgeButton}
-                alt="NFT Forge Button"
-                className="forge-button"
-                onClick={createToken}
-              />
+            {/* Select Payment */}
+            <div className="mt-4 ml-3">
+              <Form.Group as={Row} controlId="formPlaintextPassword">
+                <Form.Label as="legend" column sm="4">
+                  Payment Type
+                </Form.Label>
+                <Col sm="8" className="align-self-center">
+                  <Form.Check
+                    type="radio"
+                    label="ETH"
+                    checked={isPaymentETH}
+                    onChange={(e) => setIsPaymentETH(true)}
+                  />
+                  <Form.Check
+                    type="radio"
+                    label="ZUT"
+                    checked={!isPaymentETH}
+                    onChange={(e) => setIsPaymentETH(false)}
+                  />
+                </Col>
+              </Form.Group>
             </div>
+
+            {/* Token Creation */}
+            {account && (
+              <div className="mt-4">
+                <Image
+                  src={forgeButton}
+                  alt="NFT Forge Button"
+                  className="forge-button"
+                  onClick={createToken}
+                />
+              </div>
+            )}
           </Col>
         </Row>
       </Container>
