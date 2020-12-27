@@ -23,21 +23,23 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
 
     CountersUpgradeable.Counter private _tokenIdTracker;
 
-    IERC20Upgradeable zut;
+    IERC20Upgradeable public zut;
 
     uint256 public ethFee;
     uint256 public zutFee;
 
-    address payable feeRecipient;
+    address payable public feeRecipient;
 
     string private _contractURI;
     string private _baseURI;
-    mapping(uint256 => string) ipfsHashes;
+    mapping(uint256 => string) public ipfsHashes;
+    mapping(uint256 => address) tokenCreators;
+    mapping(uint256 => bool) activated;
 
     // Storing conditions for burn
-    mapping(uint256 => address) tokenMinBalances;
-    mapping(uint256 => uint256) minBalances;
-    mapping(uint256 => uint256) expirations;
+    mapping(uint256 => address) public tokenMinBalances;
+    mapping(uint256 => uint256) public minBalances;
+    mapping(uint256 => uint256) public expirations;
 
     // === V1 State Vars END ===
 
@@ -97,7 +99,7 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         virtual
         returns (bool burnable)
     {
-        if (balanceOf(user, tokenId) == 0) return false;
+        if (balanceOf(user, tokenId) == 0 || !activated[tokenId]) return false;
 
         // Condition 1: Min Balance of ERC20
         if (tokenMinBalances[tokenId] != address(0)) {
@@ -137,7 +139,6 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
 
         require(msg.value >= amountFee, "Not enough ETH sent");
         require(expiration > block.timestamp, "Time in the past");
-        require(tokenAddress != address(0), "ZERO ADDRESS");
 
         uint256 tokenId = _tokenIdTracker.current();
 
@@ -146,6 +147,9 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         tokenMinBalances[tokenId] = tokenAddress;
         minBalances[tokenId] = minBalance;
         expirations[tokenId] = expiration;
+
+        // store token creator
+        tokenCreators[tokenId] = msg.sender;
 
         // Mint token to user
         _mint(_msgSender(), tokenId, amountTokens, "");
@@ -172,7 +176,6 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         string memory ipfsHash
     ) external virtual {
         require(expiration > block.timestamp, "Time in the past");
-        require(tokenAddress != address(0), "ZERO ADDRESS");
 
         uint256 amountFee = zutFee.mul(amountTokens);
 
@@ -186,6 +189,9 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         tokenMinBalances[tokenId] = tokenAddress;
         minBalances[tokenId] = minBalance;
         expirations[tokenId] = expiration;
+
+        // store token creator
+        tokenCreators[tokenId] = msg.sender;
 
         // Mint token to user
         _mint(_msgSender(), tokenId, amountTokens, "");
@@ -204,6 +210,30 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         );
 
         _burn(user, tokenId, 1);
+    }
+
+    function activateToken(uint256 tokenId) external {
+        require(tokenCreators[tokenId] == msg.sender, "Not token creator");
+
+        activated[tokenId] = true;
+    }
+
+    function _beforeTokenTransfer(
+        address operator,
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) internal override {
+        // when its not minting or burning
+        if (from != address(0) && to != address(0))
+            for (uint256 i = 0; i < ids.length; i++) {
+                require(
+                    balanceOf(to, ids[i]) == 0 && amounts[i] == 1,
+                    "User can own only 1 token per id"
+                );
+            }
     }
 
     /**
