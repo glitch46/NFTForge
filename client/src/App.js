@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { Button, Container, Row, Col, Image, Form } from "react-bootstrap";
+import dayjs from "dayjs";
 import ipfs from "./utils/ipfs";
 
 // Web3
@@ -8,6 +9,8 @@ import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import Torus from "@toruslabs/torus-embed";
 import Authereum from "authereum";
+import { erc20Abi, forgeAbi } from "./abis";
+import { FORGE_ADDRESS, ZUT_ADDRESS, ZERO_ADDRESS } from "./constants";
 
 // CSS
 import "./App.css";
@@ -64,12 +67,19 @@ function App() {
   const [option2Checked, setOption2Checked] = useState(false);
   const [expirationTime, setExpirationTime] = useState(0);
 
+  // Web3
+  const [forgeContract, setForgeContract] = useState(null);
+  const [zutContract, setZutContract] = useState(null);
+
   // Functions
 
   const logout = () => {
     setAccount(null);
     web3Modal.clearCachedProvider();
   };
+
+  const toWei = (num) => window.web3.utils.toWei(String(num));
+  const fromWei = (num) => window.web3.utils.fromWei(String(num));
 
   const connectWeb3 = useCallback(async () => {
     try {
@@ -83,6 +93,12 @@ function App() {
 
       const acc = await window.web3.eth.getAccounts();
       setAccount(acc[0]);
+
+      window.zut = new window.web3.eth.Contract(erc20Abi, ZUT_ADDRESS);
+      window.forge = new window.web3.eth.Contract(forgeAbi, FORGE_ADDRESS);
+
+      setZutContract(window.zut);
+      setForgeContract(window.forge);
 
       console.log("Connected Account: ", acc[0]);
     } catch (error) {
@@ -112,9 +128,23 @@ function App() {
 
   const createToken = async () => {
     console.log("Creating NFT...");
+    try {
+      // const ipfsHash = await addToIpfs();
+      // console.log(ipfsHash);
 
-    // const ipfsHash = await addToIpfs();
-    // console.log(ipfsHash);
+      const now = dayjs().unix();
+
+      console.log("Current Time", now);
+
+      const ethFee = await forgeContract.methods.ethFee().call();
+      console.log("ETH FEE", fromWei(ethFee));
+
+      await forgeContract.methods
+        .buyWithETH(10, ZERO_ADDRESS, 0, now + 3600, "")
+        .send({ from: account, value: 10 * ethFee });
+    } catch (error) {
+      console.log(error.message);
+    }
   };
 
   return (
