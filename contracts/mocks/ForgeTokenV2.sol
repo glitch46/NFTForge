@@ -28,16 +28,18 @@ contract ForgeTokenV2 is ERC1155PresetMinterPauserUpgradeable {
     uint256 public ethFee;
     uint256 public zutFee;
 
-    address payable feeRecipient;
+    address payable public feeRecipient;
 
     string private _contractURI;
     string private _baseURI;
-    mapping(uint256 => string) ipfsHashes;
+    mapping(uint256 => string) public ipfsHashes;
+    mapping(uint256 => address) tokenCreators;
+    mapping(uint256 => bool) activated;
 
     // Storing conditions for burn
-    mapping(uint256 => address) tokenMinBalances;
-    mapping(uint256 => uint256) minBalances;
-    mapping(uint256 => uint256) expirations;
+    mapping(uint256 => address) public tokenMinBalances;
+    mapping(uint256 => uint256) public minBalances;
+    mapping(uint256 => uint256) public expirations;
 
     // === V1 State Vars END ===
 
@@ -45,6 +47,8 @@ contract ForgeTokenV2 is ERC1155PresetMinterPauserUpgradeable {
 
     // Add property 3
     mapping(uint256 => uint256) minHoldings;
+
+    // === V2 State Vars END ===
 
     function initialize(
         IERC20Upgradeable _zut,

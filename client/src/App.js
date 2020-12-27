@@ -58,6 +58,9 @@ function App() {
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState(null);
 
+  // Amount Tokens
+  const [amountTokens, setAmountTokens] = useState(0);
+
   // Min Balance Condition
   const [option1Checked, setOption1Checked] = useState(false);
   const [tokenAddress, setTokenAddress] = useState(null);
@@ -82,7 +85,7 @@ function App() {
   };
 
   const toWei = (num) => window.web3.utils.toWei(String(num));
-  const fromWei = (num) => window.web3.utils.fromWei(String(num));
+  const fromWei = (num) => Number(window.web3.utils.fromWei(String(num)));
 
   const connectWeb3 = useCallback(async () => {
     try {
@@ -116,7 +119,7 @@ function App() {
     var reader = new FileReader();
     reader.readAsArrayBuffer(_file);
     reader.onloadend = () => {
-      console.log(Buffer(reader.result));
+      // console.log(Buffer(reader.result));
       setFile(Buffer(reader.result));
     };
   };
@@ -131,22 +134,63 @@ function App() {
 
   const createToken = async () => {
     console.log("Paying with ETH?", isPaymentETH);
-    console.log("Creating NFT...");
+    console.log(`Creating ${amountTokens} NFTs...`);
+
+    if (!option1Checked && !option2Checked)
+      return console.log("Must select at least one condition");
 
     try {
-      // const ipfsHash = await addToIpfs();
-      // console.log(ipfsHash);
+      const ipfsHash = await addToIpfs();
+      console.log("IPFS HASH", ipfsHash);
 
       const now = dayjs().unix();
 
       console.log("Current Time", now);
 
-      const ethFee = await forgeContract.methods.ethFee().call();
-      console.log("ETH FEE", fromWei(ethFee));
+      const tokenCondition = option1Checked ? tokenAddress : ZERO_ADDRESS;
+      const minBalanceCondition = option1Checked ? minBalance : 0;
+      const expirationCondition = option2Checked ? now + expirationTime : 0;
 
-      await forgeContract.methods
-        .buyWithETH(10, ZERO_ADDRESS, 0, now + 3600, "")
-        .send({ from: account, value: 10 * ethFee });
+      if (isPaymentETH) {
+        const ethFee = await forgeContract.methods.ethFee().call();
+        console.log("ETH FEE", fromWei(ethFee));
+
+        await forgeContract.methods
+          .buyWithETH(
+            amountTokens,
+            tokenCondition,
+            minBalanceCondition,
+            expirationCondition,
+            ipfsHash
+          )
+          .send({ from: account, value: amountTokens * ethFee });
+      } else {
+        const zutFee = await forgeContract.methods.zutFee().call();
+        console.log("ZUT FEE", fromWei(zutFee));
+
+        const allowance = await zutContract.methods
+          .allowance(account, FORGE_ADDRESS)
+          .call();
+        console.log("Allowance", fromWei(allowance));
+        if (allowance < fromWei(amountTokens * zutFee)) {
+          const infinite = window.web3.utils
+            .toBN(2)
+            .pow(window.web3.utils.toBN(256).sub(window.web3.utils.toBN(1)));
+          await zutContract.methods
+            .approve(FORGE_ADDRESS, infinite)
+            .send({ from: account });
+        }
+
+        await forgeContract.methods
+          .buyWithZUT(
+            amountTokens,
+            tokenCondition,
+            minBalanceCondition,
+            expirationCondition,
+            ipfsHash
+          )
+          .send({ from: account });
+      }
     } catch (error) {
       console.log(error.message);
     }
@@ -219,7 +263,7 @@ function App() {
               )}
 
               <Form className="mt-5">
-                <Form.Group as={Row} controlId="formPlaintextPassword">
+                <Form.Group as={Row}>
                   <Form.Label column sm="3">
                     NFT Name
                   </Form.Label>
@@ -231,12 +275,25 @@ function App() {
                   </Col>
                 </Form.Group>
 
-                <Form.Group as={Row} controlId="formPlaintextPassword">
+                <Form.Group as={Row}>
                   <Form.Label column sm="3">
                     Symbol
                   </Form.Label>
                   <Col sm="9" className="align-self-center">
                     <Form.Control type="text" placeholder="ZUT, ETH, ZRX ..." />
+                  </Col>
+                </Form.Group>
+
+                <Form.Group as={Row}>
+                  <Form.Label column sm="3">
+                    Amount Tokens
+                  </Form.Label>
+                  <Col sm="9" className="align-self-center">
+                    <Form.Control
+                      type="number"
+                      placeholder="100"
+                      onChange={(e) => setAmountTokens(e.target.value)}
+                    />
                   </Col>
                 </Form.Group>
               </Form>
@@ -338,7 +395,7 @@ function App() {
             </div>
 
             {/* Token Creation */}
-            {account && (
+            {account && file && (
               <div className="mt-4">
                 <Image
                   src={forgeButton}

@@ -138,7 +138,9 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         uint256 amountFee = ethFee.mul(amountTokens);
 
         require(msg.value >= amountFee, "Not enough ETH sent");
-        require(expiration > block.timestamp, "Time in the past");
+
+        if (expiration > 0)
+            require(expiration > block.timestamp, "Time in the past");
 
         uint256 tokenId = _tokenIdTracker.current();
 
@@ -175,7 +177,8 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         uint256 expiration,
         string memory ipfsHash
     ) external virtual {
-        require(expiration > block.timestamp, "Time in the past");
+        if (expiration > 0)
+            require(expiration > block.timestamp, "Time in the past");
 
         uint256 amountFee = zutFee.mul(amountTokens);
 
