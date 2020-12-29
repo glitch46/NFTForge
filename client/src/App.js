@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Button, Container, Row, Col, Image, Form } from "react-bootstrap";
+import { Container, Row, Col, Image, Form } from "react-bootstrap";
 import dayjs from "dayjs";
 import ipfs from "./utils/ipfs";
 
@@ -22,6 +22,7 @@ import uploadButton from "./assets/uploadButton.png";
 
 // Components
 import Header from "./components/Header";
+import Alert from "./components/Alert";
 
 // Web3 Modal
 const providerOptions = {
@@ -57,12 +58,12 @@ const web3Modal = new Web3Modal({
 function App() {
   const [account, setAccount] = useState(null);
 
-  // File
+  // Details
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState(null);
-
-  // Amount Tokens
   const [amountTokens, setAmountTokens] = useState(0);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
 
   // Min Balance Condition
   const [option1Checked, setOption1Checked] = useState(false);
@@ -80,8 +81,11 @@ function App() {
   const [forgeContract, setForgeContract] = useState(null);
   const [zutContract, setZutContract] = useState(null);
 
-  // Functions
+  // Alerts
+  const [error, setError] = useState(null);
+  const [confirmation, setConfirmation] = useState(null);
 
+  // Functions
   const logout = () => {
     setAccount(null);
     web3Modal.clearCachedProvider();
@@ -127,9 +131,9 @@ function App() {
     };
   };
 
-  const addToIpfs = async () => {
+  const addToIpfs = async (content) => {
     console.log("adding to IPFS...");
-    const added = await ipfs.add(file, {
+    const added = await ipfs.add(content, {
       progress: (prog) => console.log(`received: ${prog}`),
     });
     return added.cid.toString();
@@ -143,8 +147,8 @@ function App() {
       return console.log("Must select at least one condition");
 
     try {
-      const ipfsHash = await addToIpfs();
-      console.log("IPFS HASH", ipfsHash);
+      const ipfsHash = await addToIpfs(file);
+      console.log("File Ipfs Hash", ipfsHash);
 
       const now = dayjs().unix();
 
@@ -154,17 +158,44 @@ function App() {
       const minBalanceCondition = option1Checked ? minBalance : 0;
       const expirationCondition = option2Checked ? now + expirationTime : 0;
 
+      const schema = {
+        name,
+        description,
+        image: "ipfs://" + ipfsHash,
+        attributes: [
+          {
+            trait_type: "Min Token",
+            value: tokenCondition,
+          },
+          {
+            trait_type: "Min Balance",
+            value: minBalanceCondition,
+          },
+          {
+            trait_type: "Expiration",
+            value: expirationCondition,
+          },
+        ],
+      };
+
+      console.log("Token Schema", schema);
+
+      const tokenInfo = JSON.stringify(schema);
+      const schemaHash = await addToIpfs(tokenInfo);
+      console.log("Schema Ipfs Hash", schemaHash);
+
+      let tx;
       if (isPaymentETH) {
         const ethFee = await forgeContract.methods.ethFee().call();
         console.log("ETH FEE", fromWei(ethFee));
 
-        await forgeContract.methods
+        tx = await forgeContract.methods
           .buyWithETH(
             amountTokens,
             tokenCondition,
             minBalanceCondition,
             expirationCondition,
-            ipfsHash
+            schemaHash
           )
           .send({ from: account, value: amountTokens * ethFee });
       } else {
@@ -184,17 +215,24 @@ function App() {
             .send({ from: account });
         }
 
-        await forgeContract.methods
+        tx = await forgeContract.methods
           .buyWithZUT(
             amountTokens,
             tokenCondition,
             minBalanceCondition,
             expirationCondition,
-            ipfsHash
+            schemaHash
           )
           .send({ from: account });
       }
+
+      const { id } = tx.events.TransferSingle.returnValues;
+      setConfirmation(
+        `Successfully created ${amountTokens} tokens with id #${id}`
+      );
+      console.log("Tx Receipt", tx);
     } catch (error) {
+      setError(error.message);
       console.log(error.message);
     }
   };
@@ -246,17 +284,22 @@ function App() {
                   <Col sm="9" className="align-self-center">
                     <Form.Control
                       type="text"
-                      placeholder="Eg. Blue ZUT Statue"
+                      placeholder="Project Name"
+                      onChange={(e) => setName(e.target.value)}
                     />
                   </Col>
                 </Form.Group>
 
                 <Form.Group as={Row}>
                   <Form.Label column sm="3">
-                    Symbol
+                    Description
                   </Form.Label>
                   <Col sm="9" className="align-self-center">
-                    <Form.Control type="text" placeholder="ZUT, ETH, ZRX ..." />
+                    <Form.Control
+                      type="text"
+                      placeholder="Project Description"
+                      onChange={(e) => setDescription(e.target.value)}
+                    />
                   </Col>
                 </Form.Group>
 
@@ -384,6 +427,7 @@ function App() {
           </Col>
         </Row>
       </Container>
+      {error && <Alert type="danger" content={error} />}
     </>
   );
 }

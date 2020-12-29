@@ -25,7 +25,7 @@ export default function Header({ account, logout, connectWeb3 }) {
         <Button
           variant="secondary"
           onClick={connectWeb3}
-          className="connect-button mr-5"
+          className="connect-button mt-4 mr-5"
         >
           Connect to Web3
         </Button>
