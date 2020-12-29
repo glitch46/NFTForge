@@ -20,6 +20,9 @@ import image from "./assets/logo.png";
 import forgeButton from "./assets/forgeButton.png";
 import uploadButton from "./assets/uploadButton.png";
 
+// Components
+import Header from "./components/Header";
+
 // Web3 Modal
 const providerOptions = {
   walletconnect: {
@@ -198,34 +201,7 @@ function App() {
 
   return (
     <>
-      <div className="float-right">
-        {account ? (
-          <>
-            <h5 className="mr-5">
-              Connected:{" "}
-              {account.substring(0, 4) + "..." + account.substring(38, 42)}
-              <span>
-                <Button
-                  className="ml-2"
-                  variant="outline-secondary"
-                  size="sm"
-                  onClick={logout}
-                >
-                  Logout
-                </Button>
-              </span>
-            </h5>
-          </>
-        ) : (
-          <Button
-            variant="secondary"
-            onClick={connectWeb3}
-            className="connect-button mr-5"
-          >
-            Connect to Web3
-          </Button>
-        )}
-      </div>
+      <Header account={account} logout={logout} connectWeb3={connectWeb3} />
       <Container className="mt-5">
         <Row className="justify-content-center">
           <Col>
