@@ -94,6 +94,18 @@ function App() {
   const toWei = (num) => window.web3.utils.toWei(String(num));
   const fromWei = (num) => Number(window.web3.utils.fromWei(String(num)));
 
+  const reset = () => {
+    setFile(null);
+    setFileName(null);
+    setName(null);
+    setDescription(null);
+    setOption1Checked(false);
+    setTokenAddress(null);
+    setMinBalance(null);
+    setOption2Checked(false);
+    setExpirationTime(null);
+    setIsPaymentETH(true);
+  };
   const connectWeb3 = useCallback(async () => {
     try {
       const provider = await web3Modal.connect();
@@ -231,6 +243,8 @@ function App() {
         `Successfully created ${amountTokens} tokens with id #${id}`
       );
       console.log("Tx Receipt", tx);
+
+      reset();
     } catch (error) {
       setError(error.message);
       console.log(error.message);
@@ -428,6 +442,7 @@ function App() {
         </Row>
       </Container>
       {error && <Alert type="danger" content={error} />}
+      {confirmation && <Alert type="success" content={confirmation} />}
     </>
   );
 }
