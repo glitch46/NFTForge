@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Container, Row, Col, Image, Form } from "react-bootstrap";
 import dayjs from "dayjs";
 import ipfs from "./utils/ipfs";
+import TimePicker from "react-bootstrap-time-picker";
 
 // Web3
 import Web3 from "web3";
@@ -23,6 +24,9 @@ import uploadButton from "./assets/uploadButton.png";
 // Components
 import Header from "./components/Header";
 import Alert from "./components/Alert";
+
+var utc = require("dayjs/plugin/utc");
+dayjs.extend(utc);
 
 // Web3 Modal
 const providerOptions = {
@@ -72,6 +76,9 @@ function App() {
 
   // Expiration Condition
   const [option2Checked, setOption2Checked] = useState(false);
+  const [expirationDate, setExpirationDate] = useState(
+    new Date().toISOString().slice(0, 10)
+  );
   const [expirationTime, setExpirationTime] = useState(0);
 
   // Expiration Condition
@@ -162,13 +169,11 @@ function App() {
       const ipfsHash = await addToIpfs(file);
       console.log("File Ipfs Hash", ipfsHash);
 
-      const now = dayjs().unix();
-
-      console.log("Current Time", now);
-
       const tokenCondition = option1Checked ? tokenAddress : ZERO_ADDRESS;
       const minBalanceCondition = option1Checked ? minBalance : 0;
-      const expirationCondition = option2Checked ? now + expirationTime : 0;
+      const expirationCondition = option2Checked
+        ? dayjs(expirationDate).unix() + expirationTime
+        : 0;
 
       const schema = {
         name,
@@ -378,28 +383,29 @@ function App() {
             </div>
 
             {/* Option 2: Expiration Time */}
+
             <div className="mt-4 ml-3">
               <Form.Check type={"checkbox"}>
                 <Form.Check.Input
                   type={"checkbox"}
                   onChange={(e) => setOption2Checked(e.target.checked)}
                 />
-                <Form.Check.Label>{`NFT Auto Destructs on a timer`}</Form.Check.Label>
+                <Form.Check.Label>{`NFT Auto Destructs at`}</Form.Check.Label>
               </Form.Check>
               {option2Checked && (
                 <Form className="mt-2 ml-2">
-                  <Form.Group as={Row} controlId="formPlaintextPassword">
-                    <Form.Label column sm="3">
-                      Expiration Time
-                    </Form.Label>
-                    <Col sm="9" className="align-self-center">
-                      <Form.Control
-                        type="number"
-                        placeholder="Eg. 1608497905"
-                        onChange={(e) => setExpirationTime(e.target.value)}
-                      />
-                    </Col>
-                  </Form.Group>
+                  <Form.Control
+                    type="date"
+                    value={expirationDate}
+                    onChange={(e) => setExpirationDate(e.target.value)}
+                    className="mb-3 w-50"
+                  />
+                  <TimePicker
+                    className="w-50"
+                    step={60}
+                    value={expirationTime}
+                    onChange={(time) => setExpirationTime(time)}
+                  />
                 </Form>
               )}
             </div>

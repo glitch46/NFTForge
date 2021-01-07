@@ -142,6 +142,9 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         if (expiration > 0)
             require(expiration > block.timestamp, "Time in the past");
 
+        if (minBalance > 0)
+            require(tokenAddress != address(0), "Invalid Address");
+
         uint256 tokenId = _tokenIdTracker.current();
 
         // Add token properties and conditions
@@ -179,6 +182,9 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
     ) external virtual {
         if (expiration > 0)
             require(expiration > block.timestamp, "Time in the past");
+
+        if (minBalance > 0)
+            require(tokenAddress != address(0), "Invalid Address");
 
         uint256 amountFee = zutFee.mul(amountTokens);
 

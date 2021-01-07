@@ -8,7 +8,13 @@ export default function Header({ account, logout, connectWeb3 }) {
         <>
           <h5 className="mr-3">
             Connected:{" "}
-            {account.substring(0, 4) + "..." + account.substring(38, 42)}
+            <a
+              href={`https://etherscan.io/address/${account}`}
+              target="_blank"
+              className="account-link"
+            >
+              {account.substring(0, 4) + "..." + account.substring(38, 42)}
+            </a>
           </h5>
           <div className="float-right">
             <Button
