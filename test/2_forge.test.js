@@ -146,21 +146,6 @@ contract("Forge Token", ([admin, alice, bob, feeRecipient, ...users]) => {
       assert(!canBurn);
     });
 
-    it("creator should activate token to start burning conditions", async function () {
-      for (let i = 0; i < 3; i++) {
-        const canBurn = await forge.canBurn(0, users[i]); // users do not have ZUT tokens yet
-        assert(!canBurn);
-      }
-
-      await forge.activateToken(0, { from: alice });
-      await forge.activateToken(1, { from: bob });
-
-      for (let i = 0; i < 3; i++) {
-        const canBurn = await forge.canBurn(0, users[i]); // users do not have ZUT tokens yet
-        assert(canBurn);
-      }
-    });
-
     it("should not be able to burn if user meets min balance", async function () {
       // Fund users with min balance (2 ZUT)
       for (let i = 0; i < 3; i++) {

@@ -34,7 +34,6 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
     string private _baseURI;
     mapping(uint256 => string) public ipfsHashes;
     mapping(uint256 => address) tokenCreators;
-    mapping(uint256 => bool) activated;
 
     // Storing conditions for burn
     mapping(uint256 => address) public tokenMinBalances;
@@ -43,6 +42,9 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
 
     // === V1 State Vars END ===
 
+    /**
+     * @dev initialize variables, used for upgradeable contracts
+     */
     function initialize(
         IERC20Upgradeable _zut,
         address payable _feeRecipient,
@@ -57,6 +59,9 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         zutFee = _zutFee;
     }
 
+    /**
+     * @dev only admin role modifier
+     */
     modifier onlyAdmin() {
         require(
             hasRole(DEFAULT_ADMIN_ROLE, _msgSender()),
@@ -81,10 +86,16 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         return Strings.strConcat(_baseURI, ipfsHashes[tokenId]);
     }
 
+    /**
+     * @dev tracks current token Id
+     */
     function currentTokenId() public view returns (uint256) {
         return _tokenIdTracker.current();
     }
 
+    /**
+     * @dev contract metadata for marketplace usage
+     */
     function contractURI() public view returns (string memory) {
         return _contractURI;
     }
@@ -99,7 +110,8 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         virtual
         returns (bool burnable)
     {
-        if (balanceOf(user, tokenId) == 0 || !activated[tokenId]) return false;
+        if (balanceOf(user, tokenId) == 0 || tokenCreators[tokenId] == user)
+            return false;
 
         // Condition 1: Min Balance of ERC20
         if (tokenMinBalances[tokenId] != address(0)) {
@@ -211,7 +223,7 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
     /**
      * @notice Burn a NFT token if certain conditions are met
      */
-    function burnToken(uint256 tokenId, address user) external {
+    function burnToken(uint256 tokenId, address user) public {
         require(canBurn(tokenId, user), "Can't burn token yet");
         require(
             hasRole(keccak256("BURNER_ROLE"), _msgSender()),
@@ -221,10 +233,15 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         _burn(user, tokenId, 1);
     }
 
-    function activateToken(uint256 tokenId) external {
-        require(tokenCreators[tokenId] == msg.sender, "Not token creator");
-
-        activated[tokenId] = true;
+    /**
+     * @notice Burn NFT tokens in a batch transaction
+     */
+    function burnTokenBatch(uint256[] memory tokenIds, address[] memory users)
+        public
+    {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            burnToken(tokenIds[i], users[i]);
+        }
     }
 
     function _beforeTokenTransfer(
