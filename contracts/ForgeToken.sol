@@ -130,6 +130,23 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
     }
 
     /**
+     * @dev easier way to get all details for token burn conditions
+     */
+    function getConditions(uint256 tokenId)
+        public
+        view
+        returns (
+            address token,
+            uint256 minAmount,
+            uint256 expires
+        )
+    {
+        token = tokenMinBalances[tokenId];
+        minAmount = minBalances[tokenId];
+        expires = expirations[tokenId];
+    }
+
+    /**
      *** SETTERS ****
      */
 

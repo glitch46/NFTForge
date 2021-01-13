@@ -26,6 +26,9 @@ module.exports = async function (deployer, network, accounts) {
 
   console.log("Deployed ZUT", zutToken.address);
 
+  if (network === "development")
+    zutToken.mint(accounts[0], web3.utils.toWei(1000));
+
   // DEPLOY PROXY FORGE ERC1155
   const forgeToken = await deployProxy(
     ForgeToken,
