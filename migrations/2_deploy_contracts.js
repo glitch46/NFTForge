@@ -27,7 +27,7 @@ module.exports = async function (deployer, network, accounts) {
   console.log("Deployed ZUT", zutToken.address);
 
   if (network === "development")
-    zutToken.mint(accounts[0], web3.utils.toWei(1000));
+    zutToken.mint(accounts[0], web3.utils.toWei("1000"));
 
   // DEPLOY PROXY FORGE ERC1155
   const forgeToken = await deployProxy(
@@ -39,4 +39,7 @@ module.exports = async function (deployer, network, accounts) {
   await forgeToken.setContractURI(APP_URL);
 
   console.log("Deployed Forge", forgeToken.address);
+
+  console.log("Granting Burner Role to Accounts 0");
+  await forgeToken.grantRole(web3.utils.sha3("BURNER_ROLE"), accounts[0]);
 };
