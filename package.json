@@ -9,9 +9,11 @@
   "scripts": {
     "ganache": "ganache-cli -p 8545 -i 666 -d",
     "deploy": "truffle migrate --reset",
+    "mock": "npm run deploy && truffle exec scripts/createTokens.js",
     "testnet": "truffle migrate --reset --network rinkeby",
-    "test":"truffle test --network test",
-    "test-f":"truffle test --network test test/2_forge.test.js"
+    "test": "truffle test --network test",
+    "test-f": "truffle test --network test test/2_forge.test.js",
+    "upgrade": "truffle exec scripts/upgradeForge.js --network rinkeby"
   },
   "repository": {
     "type": "git",
@@ -25,6 +27,7 @@
   },
   "homepage": "https://github.com/glitch46/NFTForge#readme",
   "dependencies": {
+    "@openzeppelin/contracts": "^3.3.0",
     "@openzeppelin/contracts-upgradeable": "^3.3.0",
     "@openzeppelin/truffle-upgrades": "^1.3.1",
     "@truffle/hdwallet-provider": "^1.2.0",

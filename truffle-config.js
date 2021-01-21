@@ -15,6 +15,12 @@ module.exports = {
       network_id: 666,
       gasPrice: 35e9,
     },
+    upgrade: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: 666,
+      gasPrice: 35e9,
+    },
     test: {
       host: "127.0.0.1",
       port: 8545,
@@ -26,6 +32,14 @@ module.exports = {
       network_id: 4,
       gas: 6e6,
       gasPrice: 10e9, // 10 Gwei
+      skipDryRun: true,
+    },
+    rinkebyUpgrade: {
+      provider: () => providerFactory("rinkeby"),
+      network_id: 4,
+      gas: 6e6,
+      gasPrice: 10e9, // 10 Gwei
+      skipDryRun: true,
     },
     mainnet: {
       provider: () => providerFactory("mainnet"),

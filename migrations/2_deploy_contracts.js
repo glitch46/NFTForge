@@ -19,12 +19,8 @@ module.exports = async function (deployer, network, accounts) {
   silenceWarnings();
 
   // DEPLOY PROXY ZUT ERC20
-  const zutToken = await deployProxy(ZUT, ["Zero Utility Token", "ZUT"], {
-    deployer,
-    unsafeAllowCustomTypes: true,
-  });
-
-  console.log("Deployed ZUT", zutToken.address);
+  await deployer.deploy(ZUT);
+  const zutToken = await ZUT.deployed();
 
   if (network === "development")
     zutToken.mint(accounts[0], web3.utils.toWei("1000"));

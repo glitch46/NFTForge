@@ -20,10 +20,7 @@ contract("Forge Token", ([admin, alice, bob, feeRecipient, ...users]) => {
   let zut, forge;
 
   before(async function () {
-    zut = await deployProxy(ZUT, ["Zero Utility Token", "ZUT"], {
-      admin,
-      unsafeAllowCustomTypes: true,
-    });
+    zut = await ZUT.new();
 
     // DEPLOY PROXY FORGE ERC1155
     forge = await deployProxy(
@@ -180,7 +177,7 @@ contract("Forge Token", ([admin, alice, bob, feeRecipient, ...users]) => {
       await forge.burnToken(0, users[0], { from: admin });
     });
 
-    it("should be able to burn a token when it expires", async function () {
+    it("should be able to burn tokens in batch when it expires", async function () {
       await expectRevert(
         forge.burnToken(1, users[0], { from: admin }),
         "Can't burn token yet"
@@ -190,7 +187,11 @@ contract("Forge Token", ([admin, alice, bob, feeRecipient, ...users]) => {
       await time.advanceBlock(1);
 
       // Burn token
-      await forge.burnToken(1, users[0], { from: admin });
+      await forge.burnTokenBatch(
+        Array(3).fill(1),
+        [users[0], users[1], users[2]],
+        { from: admin }
+      );
     });
   });
 });
