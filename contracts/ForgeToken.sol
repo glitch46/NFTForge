@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.7.6;
 
 import "@openzeppelin/contracts-upgradeable/presets/ERC1155PresetMinterPauserUpgradeable.sol";
@@ -52,7 +51,7 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         uint256 _zutFee
     ) public initializer {
         ERC1155PresetMinterPauserUpgradeable.initialize("");
-        _baseURI = "https://ipfs.io/ipfs/";
+        _baseURI = "ipfs://";
         zut = _zut;
         feeRecipient = _feeRecipient;
         ethFee = _ethFee;
@@ -127,6 +126,23 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         ) {
             return true;
         }
+    }
+
+    /**
+     * @dev easier way to get all details for token burn conditions
+     */
+    function getConditions(uint256 tokenId)
+        public
+        view
+        returns (
+            address token,
+            uint256 minAmount,
+            uint256 expires
+        )
+    {
+        token = tokenMinBalances[tokenId];
+        minAmount = minBalances[tokenId];
+        expires = expirations[tokenId];
     }
 
     /**

@@ -1,10 +1,10 @@
 const ZUT = artifacts.require("ZUT");
 
-//truffle exec scripts/mintZut.js 0x2DfC59f70826281BC2EE0bE2E4FAA59DE33e3622 100 --network rinkeby
-
+//truffle exec scripts/mintZut.js 0x2DfC59f70826281BC2EE0bE2E4FAA59DE33e3622 1000 --network rinkeby
+//truffle exec scripts/mintZut.js 0xB29aE9a9BF7CA2984a6a09939e49d9Cf46AB0c1d 1000 --network rinkeby
 module.exports = async (callback) => {
   try {
-    const zut = await ZUT.at("0xc0171836BA0036AD0DD24697E22BF3d2d45B45aE");
+    const zut = await ZUT.deployed();
 
     const address = process.argv[4];
     const amount = web3.utils.toWei(process.argv[5]);
