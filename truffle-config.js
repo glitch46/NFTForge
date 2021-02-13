@@ -34,12 +34,25 @@ module.exports = {
       gasPrice: 10e9, // 10 Gwei
       skipDryRun: true,
     },
-    rinkebyUpgrade: {
-      provider: () => providerFactory("rinkeby"),
-      network_id: 4,
-      gas: 6e6,
-      gasPrice: 10e9, // 10 Gwei
+    matic: {
+      provider: () =>
+        new HDWalletProvider(
+          process.env.MATIC_PRIVATE_KEY,
+          `https://rpc-mumbai.matic.today`
+        ),
+      network_id: 80001,
+      confirmations: 2,
+      timeoutBlocks: 200,
       skipDryRun: true,
+    },
+    mainnet_matic: {
+      provider: () =>
+        new HDWalletProvider(
+          process.env.MATIC_PRIVATE_KEY,
+          `https://rpc-mainnet.maticvigil.com/`
+        ),
+      network_id: 137,
+      gasPrice: 1e9,
     },
     mainnet: {
       provider: () => providerFactory("mainnet"),

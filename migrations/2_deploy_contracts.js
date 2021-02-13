@@ -9,7 +9,7 @@ const ZUT = artifacts.require("ZUT");
 const ETH_FEE = web3.utils.toWei("0.02");
 const ZUT_FEE = web3.utils.toWei("0.03");
 
-const FEE_RECIPIENT = "0xD90981ee801ea9ccFDC4AEFFbD14a81989463c95";
+const FEE_RECIPIENT = "0x5336fc5d057d422c8b7b51cd50285fce0b81196d";
 
 const APP_URL = "https://nft-forge.netlify.app/";
 

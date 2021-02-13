@@ -10,7 +10,7 @@
     "ganache": "ganache-cli -p 8545 -i 666 -d",
     "deploy": "truffle migrate --reset",
     "mock": "npm run deploy && truffle exec scripts/createTokens.js",
-    "testnet": "truffle migrate --reset --network rinkeby",
+    "testnet": "truffle migrate --reset --network matic",
     "test": "truffle test --network test",
     "test-f": "truffle test --network test test/2_forge.test.js",
     "upgrade": "truffle exec scripts/upgradeForge.js --network rinkeby"
