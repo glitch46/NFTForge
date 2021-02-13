@@ -7,12 +7,12 @@ module.exports = async (callback) => {
   try {
     const accounts = await web3.eth.getAccounts();
 
-    const ZUT_ADDRESS = "0xC89Ce4735882C9F0f0FE26686c53074E09B0D550";
+    const ZUT_ADDRESS = "0x2bAb96D1D3Fafcd5185d69a53D24925fc8163E40";
     const IPFS_HASH = "QmYBzDTi64be4q8grwmQNNaWRgN8YeHU1w5MyoHEDjcZKk";
     const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
     const forge = await ForgeToken.at(
-      "0xe982E462b094850F12AF94d21D470e21bE9D0E9C"
+      "0xA3d85039287FcC632e060EDFc82B422Cd5cDe99f"
     );
 
     console.log(`Buying NFTs...`);
