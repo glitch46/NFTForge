@@ -217,7 +217,7 @@ contract ForgeToken is ERC1155PresetMinterPauserUpgradeable {
         uint256 amountFee = zutFee.mul(amountTokens);
 
         // Collect fees in ZUT token
-        zut.safeTransferFrom(_msgSender(), feeRecipient, zutFee);
+        zut.safeTransferFrom(_msgSender(), feeRecipient, amountFee);
 
         uint256 tokenId = _tokenIdTracker.current();
 
