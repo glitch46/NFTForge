@@ -1,5 +1,5 @@
 {
-  "name": "NFTForge",
+  "name": "nft-forge",
   "version": "1.0.0",
   "description": "",
   "main": "truffle-config.js",
@@ -11,6 +11,8 @@
     "deploy": "truffle migrate --reset",
     "mock": "npm run deploy && truffle exec scripts/createTokens.js",
     "testnet": "truffle migrate --reset --network matic",
+    "mainnet_matic": "truffle migrate --reset --network mainnet_matic",
+    "ropsten": "truffle migrate --reset --network ropsten",
     "test": "truffle test --network test",
     "test-f": "truffle test --network test test/2_forge.test.js",
     "upgrade": "truffle exec scripts/upgradeForge.js --network rinkeby"
@@ -31,7 +33,8 @@
     "@openzeppelin/contracts-upgradeable": "^3.3.0",
     "@openzeppelin/truffle-upgrades": "^1.3.1",
     "@truffle/hdwallet-provider": "^1.2.1",
-    "dotenv": "^8.2.0"
+    "dotenv": "^8.2.0",
+    "truffle": "^5.1.67"
   },
   "devDependencies": {
     "@openzeppelin/test-helpers": "^0.5.9"
